@@ -57,3 +57,36 @@ tr:last-child td { border-bottom: none; }
 .bService { background: #FFF8E1; color: #B38600; }
 .bSecurity { background: #FEF2F2; color: #CC0000; }
 @media (max-width: 768px) { .heroStats { grid-template-columns: repeat(3,1fr); } .row2 { grid-template-columns: 1fr; } .qualityRow { flex-direction: column; } .qualStats { grid-template-columns: repeat(3,1fr); } }
+.calendarWrap { display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 12px; }
+.calMonth { min-width: 200px; }
+.calMonthName { font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+.calDayHeaders { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; margin-bottom: 2px; }
+.calDayHeader { font-size: 9px; color: #9CA3AF; text-align: center; font-weight: 600; }
+.calGrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.calDay { width: 100%; aspect-ratio: 1; border-radius: 3px; display: flex; align-items: center; justify-content: center; cursor: default; transition: opacity 0.15s; position: relative; }
+.calDay:hover { opacity: 0.8; }
+.calEmpty { width: 100%; aspect-ratio: 1; }
+.calCount { font-size: 9px; font-weight: 700; color: #fff; }
+.calLegend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+.calLegItem { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #6B7280; }
+.calLegDot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+.scoreGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 8px; }
+.scoreCard { background: #F8F9FA; border-radius: 8px; padding: 12px; border: 1px solid #E5E7EB; }
+.scoreBulan { font-size: 11px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.scoreNum { font-size: 28px; font-weight: 700; line-height: 1; }
+.scoreLabel { font-size: 11px; font-weight: 600; margin-top: 2px; margin-bottom: 6px; }
+.scoreBar { height: 4px; background: #E5E7EB; border-radius: 2px; overflow: hidden; margin-bottom: 6px; }
+.scoreBarFill { height: 100%; border-radius: 2px; transition: width 0.4s; }
+.scoreMeta { font-size: 10px; color: #9CA3AF; }
+.scoreWarning { font-size: 10px; color: #D97706; margin-top: 4px; font-weight: 500; }
+.tableFilters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.tFilter { font-size: 12px; padding: 6px 10px; border-radius: 6px; border: 1px solid #E5E7EB; background: #F8F9FA; color: #374151; cursor: pointer; font-family: inherit; }
+.tFilter:focus { border-color: #0057A8; outline: none; }
+.tReset { font-size: 12px; padding: 6px 12px; border-radius: 6px; border: 1px solid #CC0000; background: #FEF2F2; color: #CC0000; cursor: pointer; font-family: inherit; }
+.tReset:hover { background: #CC0000; color: #fff; }
+.empty { text-align: center; padding: 28px; color: #9CA3AF; }
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 0 0; border-top: 1px solid #F3F4F6; margin-top: 4px; }
+.pgBtn { padding: 6px 14px; border-radius: 6px; border: 1px solid #E5E7EB; background: #F8F9FA; color: #374151; font-size: 12px; font-weight: 500; cursor: pointer; font-family: inherit; }
+.pgBtn:hover:not(:disabled) { background: #fff; border-color: #D1D5DB; }
+.pgBtn:disabled { opacity: 0.35; cursor: not-allowed; }
+.pgInfo { font-size: 12px; color: #9CA3AF; }

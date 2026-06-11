@@ -18,13 +18,20 @@ const parseRows = (rows) => rows
   .map((r, idx) => ({
   id:  idx + 1,
   id2: parseInt(r['ID2']) || 0,
+  
   tgl: (() => {
-    const raw = r['Completion time']
-    if (!raw) return ''
-    const d = new Date(raw)
-    if (isNaN(d)) return raw
-    return d.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' })
-  })(),
+  const raw = r['Completion time']
+  if (!raw) return ''
+  const d = new Date(raw)
+  if (isNaN(d)) return raw
+  return d.toLocaleDateString('id-ID', { weekday:'long', day:'2-digit', month:'2-digit', year:'numeric' })
+})(),
+tglRaw: (() => {
+  const raw = r['Completion time']
+  if (!raw) return 0
+  const d = new Date(raw)
+  return isNaN(d) ? 0 : d.getTime()
+})(),
   bulan:           r.Bulan || '',
   nama:            r.Name || '',
   stasiun:         r.Stasiun || '',

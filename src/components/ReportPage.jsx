@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { countBy, initials } from '../hooks/useFilters'
 import { COLORS } from '../data/sampleData'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts'
@@ -6,6 +6,85 @@ import s from './ReportPage.module.css'
 
 const BULAN_ORDER = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
 const BADGE = { Safety: s.bSafety, Service: s.bService, Security: s.bSecurity }
+
+function Modal({ entry, onClose }) {
+  if (!entry) return null
+  const BADGE_STYLE = {
+    Safety:   {background:'#EEF3FB',color:'#4472C4'},
+    Service:  {background:'#FFF8E1',color:'#B38600'},
+    Security: {background:'#FEF2F2',color:'#CC0000'},
+  }
+  const lampiranList = entry.lampiran ? entry.lampiran.split('; ').map(u => u.trim()).filter(Boolean) : []
+  const isImage = url => /\.(jpg|jpeg|png|gif|webp)/i.test(url)
+  const isVideo = url => /\.(mp4|mov|avi|webm)/i.test(url)
+  const [lightbox, setLightbox] = useState(null)
+
+  return (
+    <>
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.92)',zIndex:3000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+          <button onClick={() => setLightbox(null)} style={{position:'absolute',top:16,right:20,background:'rgba(255,255,255,0.15)',border:'none',color:'#fff',fontSize:18,width:36,height:36,borderRadius:'50%',cursor:'pointer'}}>✕</button>
+          {isVideo(lightbox)
+            ? <video src={lightbox} controls autoPlay style={{maxWidth:'90vw',maxHeight:'88vh',borderRadius:8}} onClick={e=>e.stopPropagation()}/>
+            : <img src={lightbox} alt="Lampiran" style={{maxWidth:'90vw',maxHeight:'88vh',objectFit:'contain',borderRadius:8}} onClick={e=>e.stopPropagation()}/>
+          }
+        </div>
+      )}
+      <div onClick={onClose} style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+        <div onClick={e=>e.stopPropagation()} style={{background:'#fff',borderRadius:14,width:'100%',maxWidth:640,maxHeight:'85vh',overflowY:'auto',boxShadow:'0 20px 60px rgba(0,0,0,0.2)'}}>
+          <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',padding:'18px 22px 14px',borderBottom:'1px solid #F3F4F6',position:'sticky',top:0,background:'#fff',zIndex:1}}>
+            <div>
+              <div style={{fontSize:15,fontWeight:600,color:'#0D1B2A'}}>{entry.nama}</div>
+              <div style={{fontSize:12,color:'#9CA3AF',marginTop:2}}>{entry.tgl} · {entry.stasiun} · Shift {entry.shift}</div>
+            </div>
+            <button onClick={onClose} style={{background:'none',border:'none',fontSize:16,color:'#9CA3AF',cursor:'pointer',padding:'4px 8px',borderRadius:6}}>✕</button>
+          </div>
+          <div style={{padding:'18px 22px'}}>
+            <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14,flexWrap:'wrap'}}>
+              <span style={{...BADGE_STYLE[entry.kategori],padding:'3px 10px',borderRadius:20,fontSize:11,fontWeight:600}}>{entry.kategori}</span>
+              <span style={{fontSize:12,fontWeight:500,color:'#374151'}}>{entry.subkategori}</span>
+              {entry.jenisGangguan && <span style={{fontSize:12,color:'#6B7280',background:'#F3F4F6',padding:'2px 10px',borderRadius:20}}>{entry.jenisGangguan}</span>}
+              <span style={{fontSize:12,color:'#6B7280',background:'#F3F4F6',padding:'2px 10px',borderRadius:20}}>{entry.lokasi}</span>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:600,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:5}}>Deskripsi Highlight</div>
+              <div style={{fontSize:14,color:'#374151',lineHeight:1.6}}>{entry.deskripsi || '—'}</div>
+            </div>
+            <div style={{marginBottom:14}}>
+              <div style={{fontSize:11,fontWeight:600,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:5}}>Tindak Lanjut</div>
+              <div style={{fontSize:14,color:'#374151',lineHeight:1.6}}>{entry.tindaklanjut || '—'}</div>
+            </div>
+            {lampiranList.length > 0 && (
+              <div>
+                <div style={{fontSize:11,fontWeight:600,color:'#9CA3AF',textTransform:'uppercase',letterSpacing:'0.07em',marginBottom:8}}>Lampiran ({lampiranList.length})</div>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(160px,1fr))',gap:8}}>
+                  {lampiranList.map((url,i) => (
+                    <div key={i} style={{borderRadius:8,overflow:'hidden',border:'1px solid #E5E7EB',background:'#F8F9FA'}}>
+                      {isImage(url) ? (
+                        <img src={url} alt={`Lampiran ${i+1}`} onClick={()=>setLightbox(url)}
+                          style={{width:'100%',maxHeight:160,objectFit:'cover',display:'block',cursor:'pointer'}}
+                          onError={e=>{e.target.style.display='none'}}/>
+                      ) : isVideo(url) ? (
+                        <div onClick={()=>setLightbox(url)} style={{position:'relative',cursor:'pointer'}}>
+                          <video src={url} style={{width:'100%',maxHeight:160,objectFit:'cover',display:'block',pointerEvents:'none'}}/>
+                          <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.3)',fontSize:28,color:'#fff'}}>▶</div>
+                        </div>
+                      ) : (
+                        <a href={url} target="_blank" rel="noreferrer" style={{display:'flex',alignItems:'center',justifyContent:'center',padding:24,fontSize:12,color:'#0057A8',fontWeight:500,textDecoration:'none'}}>
+                          Buka Lampiran {lampiranList.length>1?i+1:''} →
+                        </a>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
 
 export default function ReportPage({ data, nama, onBack }) {
   const pd = useMemo(() => data.filter(d => d.nama === nama), [data, nama])
@@ -53,7 +132,71 @@ export default function ReportPage({ data, nama, onBack }) {
   const singkatCount = pd.filter(d => (d.deskripsi?.length || 0) < 30).length
   const qualityScore = Math.round((detailCount / (total || 1)) * 100)
 
-  const recentLaporan = [...pd].sort((a,b) => b.id2 - a.id2).slice(0, 5)
+  const recentLaporan = [...pd].sort((a,b) => b.id2 - a.id2)
+
+const [fBulan, setFBulan]     = useState('all')
+const [fKategori, setFKategori] = useState('all')
+const [fLokasi, setFLokasi]   = useState('all')
+const [fPage, setFPage]       = useState(1)
+const [selected, setSelected] = useState(null)
+const PER_PAGE = 20
+
+const pdBulanList   = useMemo(() => [...new Set(pd.map(d => d.bulan))].filter(Boolean).sort(), [pd])
+const pdLokasiList  = useMemo(() => [...new Set(pd.map(d => d.lokasi))].filter(Boolean).sort(), [pd])
+
+const filteredPd = useMemo(() => recentLaporan.filter(d =>
+  (fBulan    === 'all' || d.bulan    === fBulan)    &&
+  (fKategori === 'all' || d.kategori === fKategori) &&
+  (fLokasi   === 'all' || d.lokasi   === fLokasi)
+), [recentLaporan, fBulan, fKategori, fLokasi])
+
+const totalPages = Math.ceil(filteredPd.length / PER_PAGE)
+const pageData   = filteredPd.slice((fPage-1)*PER_PAGE, fPage*PER_PAGE)
+
+  // Kalender & Scoring
+const submissionDates = useMemo(() => {
+  const map = {}
+  pd.forEach(d => {
+    const raw = d.tglRaw || 0
+    if (!raw) return
+    const date = new Date(raw)
+    const key = `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`
+    map[key] = (map[key] || 0) + 1
+  })
+  return map
+}, [pd])
+
+const submissionScore = useMemo(() => {
+  const bulanList = [...new Set(pd.map(d => d.bulan))].filter(Boolean)
+  if (!bulanList.length) return null
+
+  const scores = bulanList.map(bulan => {
+    const entries = pd.filter(d => d.bulan === bulan)
+    if (!entries.length) return null
+
+    const dates = entries.map(d => {
+      const raw = d.tglRaw || 0
+      if (!raw) return null
+      return new Date(raw).getDate()
+    }).filter(Boolean)
+
+    if (!dates.length) return null
+
+    const maxDate = Math.max(...dates)
+    const avgDate = Math.round(dates.reduce((a,b) => a+b, 0) / dates.length)
+    const spread = new Set(dates).size
+    const total = entries.length
+
+    // Score: spread merata = bagus, numpuk akhir bulan = buruk
+    const spreadScore = Math.min(spread / total * 100, 100)
+    const lateScore = maxDate >= 28 ? Math.max(0, 100 - (dates.filter(d => d >= 25).length / total * 100)) : 100
+    const score = Math.round((spreadScore * 0.6) + (lateScore * 0.4))
+
+    return { bulan, score, avgDate, spread, total, maxDate }
+  }).filter(Boolean)
+
+  return scores
+}, [pd])
 
   return (
     <div className={s.page}>
@@ -159,6 +302,98 @@ export default function ReportPage({ data, nama, onBack }) {
           </div>
         </div>
 
+        {/* Kalender Submission */}
+{Object.keys(submissionDates).length > 0 && (() => {
+  const allDates = Object.keys(submissionDates).sort()
+  const firstDate = new Date(allDates[0])
+  const lastDate = new Date(allDates[allDates.length - 1])
+  const bulanRange = []
+  const cur = new Date(firstDate.getFullYear(), firstDate.getMonth(), 1)
+  while (cur <= lastDate) {
+    bulanRange.push(new Date(cur))
+    cur.setMonth(cur.getMonth() + 1)
+  }
+
+  return (
+    <div className={s.card} style={{marginBottom:12}}>
+      <div className={s.cardTitle}>Kalender Submission</div>
+      <div className={s.calendarWrap}>
+        {bulanRange.map(bulanDate => {
+          const year = bulanDate.getFullYear()
+          const month = bulanDate.getMonth()
+          const bulanNama = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][month]
+          const daysInMonth = new Date(year, month+1, 0).getDate()
+          const firstDay = new Date(year, month, 1).getDay()
+          const days = []
+          for (let i = 0; i < firstDay; i++) days.push(null)
+          for (let i = 1; i <= daysInMonth; i++) days.push(i)
+
+          return (
+            <div key={`${year}-${month}`} className={s.calMonth}>
+              <div className={s.calMonthName}>{bulanNama} {year}</div>
+              <div className={s.calDayHeaders}>
+                {['Min','Sen','Sel','Rab','Kam','Jum','Sab'].map(d => (
+                  <div key={d} className={s.calDayHeader}>{d}</div>
+                ))}
+              </div>
+              <div className={s.calGrid}>
+                {days.map((day, i) => {
+                  if (!day) return <div key={`empty-${i}`} className={s.calEmpty}/>
+                  const key = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`
+                  const count = submissionDates[key] || 0
+                  const bg = count === 0 ? '#F3F4F6' : count === 1 ? '#BFDBFE' : count === 2 ? '#60A5FA' : '#1D4ED8'
+                  const isLate = day >= 25
+                  return (
+                    <div key={key} className={s.calDay}
+                      style={{background: bg, border: isLate && count > 0 ? '1.5px solid #F59E0B' : 'none'}}
+                      title={`${day} ${bulanNama}: ${count} laporan`}>
+                      {count > 0 && <span className={s.calCount}>{count}</span>}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+      <div className={s.calLegend}>
+        <span className={s.calLegItem}><span className={s.calLegDot} style={{background:'#F3F4F6'}}/>Tidak ada</span>
+        <span className={s.calLegItem}><span className={s.calLegDot} style={{background:'#BFDBFE'}}/>1 laporan</span>
+        <span className={s.calLegItem}><span className={s.calLegDot} style={{background:'#60A5FA'}}/>2 laporan</span>
+        <span className={s.calLegItem}><span className={s.calLegDot} style={{background:'#1D4ED8'}}/>3+</span>
+        <span className={s.calLegItem}><span className={s.calLegDot} style={{background:'transparent',border:'1.5px solid #F59E0B'}}/>Akhir bulan</span>
+      </div>
+    </div>
+  )
+})()}
+
+{/* Submission Score */}
+{submissionScore && submissionScore.length > 0 && (
+  <div className={s.card} style={{marginBottom:12}}>
+    <div className={s.cardTitle}>Pola Submission</div>
+    <div className={s.scoreGrid}>
+      {submissionScore.map(sc => {
+        const color = sc.score >= 80 ? '#059669' : sc.score >= 50 ? '#D97706' : '#CC0000'
+        const label = sc.score >= 80 ? 'Merata' : sc.score >= 50 ? 'Cukup' : 'Numpuk'
+        return (
+          <div key={sc.bulan} className={s.scoreCard}>
+            <div className={s.scoreBulan}>{sc.bulan}</div>
+            <div className={s.scoreNum} style={{color}}>{sc.score}</div>
+            <div className={s.scoreLabel} style={{color}}>{label}</div>
+            <div className={s.scoreBar}>
+              <div className={s.scoreBarFill} style={{width:`${sc.score}%`, background: color}}/>
+            </div>
+            <div className={s.scoreMeta}>{sc.spread} hari aktif dari {sc.total} laporan</div>
+            {sc.maxDate >= 25 && sc.score < 80 && (
+              <div className={s.scoreWarning}>⚠ Ada submission terlambat</div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  </div>
+)}
+
         <div className={s.row2}>
           {/* Sub Kategori */}
           <div className={s.card}>
@@ -213,28 +448,59 @@ export default function ReportPage({ data, nama, onBack }) {
           </div>
         </div>
 
-        {/* Laporan Terbaru */}
-        <div className={s.card}>
-          <div className={s.cardTitle}>5 Laporan Terbaru</div>
-          <div style={{overflowX:'auto'}}>
-            <table className={s.table}>
-              <thead><tr><th>Tgl</th><th>Kategori</th><th>Sub Kategori</th><th>Lokasi</th><th>Deskripsi</th></tr></thead>
-              <tbody>
-                {recentLaporan.map(d => (
-                  <tr key={d.id}>
-                    <td className={s.muted}>{d.tgl}</td>
-                    <td><span className={`${s.badge} ${BADGE[d.kategori]}`}>{d.kategori}</span></td>
-                    <td>{d.subkategori}</td>
-                    <td className={s.muted}>{d.lokasi}</td>
-                    <td className={s.trunc}>{d.deskripsi}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+       <div className={s.card}>
+  <div className={s.cardTitle}>Semua Laporan · {filteredPd.length} entri</div>
+
+  <div className={s.tableFilters}>
+    <select className={s.tFilter} value={fBulan} onChange={e=>{setFBulan(e.target.value);setFPage(1)}}>
+      <option value="all">Semua Bulan</option>
+      {pdBulanList.map(b => <option key={b} value={b}>{b}</option>)}
+    </select>
+    <select className={s.tFilter} value={fKategori} onChange={e=>{setFKategori(e.target.value);setFPage(1)}}>
+      <option value="all">Semua Kategori</option>
+      {['Safety','Service','Security'].map(k => <option key={k} value={k}>{k}</option>)}
+    </select>
+    <select className={s.tFilter} value={fLokasi} onChange={e=>{setFLokasi(e.target.value);setFPage(1)}}>
+      <option value="all">Semua Lokasi</option>
+      {pdLokasiList.map(l => <option key={l} value={l}>{l}</option>)}
+    </select>
+    {(fBulan!=='all'||fKategori!=='all'||fLokasi!=='all') && (
+      <button className={s.tReset} onClick={()=>{setFBulan('all');setFKategori('all');setFLokasi('all');setFPage(1)}}>Reset</button>
+    )}
+  </div>
+
+  <div style={{overflowX:'auto'}}>
+    <table className={s.table}>
+      <thead>
+        <tr><th>Tgl</th><th>Kategori</th><th>Sub Kategori</th><th>Lokasi</th><th>Deskripsi</th></tr>
+      </thead>
+      <tbody>
+        {pageData.length === 0
+          ? <tr><td colSpan={5} className={s.empty}>Tidak ada data</td></tr>
+          : pageData.map(d => (
+           <tr key={d.id} onClick={() => setSelected(d)} style={{cursor:'pointer'}}>
+              <td className={s.muted}>{d.tgl}</td>
+              <td><span className={`${s.badge} ${BADGE[d.kategori]}`}>{d.kategori}</span></td>
+              <td>{d.subkategori}</td>
+              <td className={s.muted}>{d.lokasi}</td>
+              <td className={s.trunc}>{d.deskripsi}</td>
+            </tr>
+          ))}
+      </tbody>
+    </table>
+  </div>
+
+  {totalPages > 1 && (
+    <div className={s.pagination}>
+      <button className={s.pgBtn} onClick={()=>setFPage(p=>p-1)} disabled={fPage===1}>← Prev</button>
+      <span className={s.pgInfo}>{(fPage-1)*PER_PAGE+1}–{Math.min(fPage*PER_PAGE,filteredPd.length)} dari {filteredPd.length}</span>
+      <button className={s.pgBtn} onClick={()=>setFPage(p=>p+1)} disabled={fPage===totalPages}>Next →</button>
+    </div>
+  )}
+</div>
 
       </div>
+      <Modal entry={selected} onClose={() => setSelected(null)} />
     </div>
   )
 }
