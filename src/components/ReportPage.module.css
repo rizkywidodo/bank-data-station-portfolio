@@ -70,8 +70,8 @@ tr:last-child td { border-bottom: none; }
 .calLegend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
 .calLegItem { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #6B7280; }
 .calLegDot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
-.scoreGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; margin-top: 8px; }
-.scoreCard { background: #F8F9FA; border-radius: 8px; padding: 12px; border: 1px solid #E5E7EB; }
+.scoreGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin-top: 12px; margin-bottom: 8px; }
+.scoreCard { background: #F8F9FA; border-radius: 10px; padding: 16px; border: 1px solid #E5E7EB; }
 .scoreBulan { font-size: 11px; color: #9CA3AF; font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
 .scoreNum { font-size: 28px; font-weight: 700; line-height: 1; }
 .scoreLabel { font-size: 11px; font-weight: 600; margin-top: 2px; margin-bottom: 6px; }

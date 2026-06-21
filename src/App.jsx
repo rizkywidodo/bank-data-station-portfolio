@@ -62,6 +62,7 @@ export default function App() {
   const [lastUpload, setLastUpload] = useState(null)
   const [page, setPage]           = useState('dashboard')
   const [selectedAA, setSelectedAA] = useState(null)
+  const [reportFilterStasiun, setReportFilterStasiun] = useState(null)
 
   useEffect(() => {
     if (auth) fetchLatest()
@@ -160,7 +161,7 @@ export default function App() {
     </div>
   )
 
-  if (page === 'report' && selectedAA) return <ReportPage data={data} nama={selectedAA} onBack={() => navigate('report')} />
-  if (page === 'report') return <ReportListPage data={data} onSelect={(nama) => navigate('report', nama)} onBack={() => navigate('dashboard')} />
+  if (page === 'report' && selectedAA) return <ReportPage data={data} nama={selectedAA} onBack={() => navigate('report')} lastUpload={lastUpload} />
+  if (page === 'report') return <ReportListPage data={data} onSelect={(nama) => navigate('report', nama)} onBack={() => navigate('dashboard')} lastUpload={lastUpload} initialStasiun={reportFilterStasiun} onStasiunChange={setReportFilterStasiun} />
   return <Dashboard data={data} onUpload={handleUpload} uploading={uploading} lastUpload={lastUpload} onNavigate={navigate} />
 }

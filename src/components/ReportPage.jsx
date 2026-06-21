@@ -86,7 +86,7 @@ function Modal({ entry, onClose }) {
   )
 }
 
-export default function ReportPage({ data, nama, onBack }) {
+export default function ReportPage({ data, nama, onBack, lastUpload }) {
   const pd = useMemo(() => data.filter(d => d.nama === nama), [data, nama])
   const allNames = useMemo(() => [...new Set(data.map(d => d.nama))], [data])
   const byKat = useMemo(() => countBy(pd, 'kategori'), [pd])
@@ -133,6 +133,21 @@ export default function ReportPage({ data, nama, onBack }) {
   const qualityScore = Math.round((detailCount / (total || 1)) * 100)
 
   const recentLaporan = [...pd].sort((a,b) => b.id2 - a.id2)
+
+  const targetBulanIni = useMemo(() => {
+  const lastBulan = allBulan[allBulan.length - 1]
+  if (!lastBulan) return null
+  const thisMonthData = pd.filter(d => d.bulan === lastBulan)
+  const target = 20 // default, bisa disesuaikan
+  const pct = Math.min(Math.round(thisMonthData.length / target * 100), 100)
+  return { bulan: lastBulan, total: thisMonthData.length, target, pct }
+}, [pd, allBulan])
+
+const bulanAA = BULAN_ORDER.filter(b => pd.some(d => d.bulan === b))
+const firstBulanIdx = BULAN_ORDER.indexOf(bulanAA[0])
+const lastBulanIdx = BULAN_ORDER.indexOf(allBulan[allBulan.length - 1])
+const expectedBulan = Math.max(lastBulanIdx - firstBulanIdx + 1, 1)
+const konsistensiScore = Math.min(Math.round(bulanAA.length / expectedBulan * 100), 100)
 
 const [fBulan, setFBulan]     = useState('all')
 const [fKategori, setFKategori] = useState('all')
@@ -225,6 +240,7 @@ const submissionScore = useMemo(() => {
             <div>
               <h1 className={s.name}>{nama}</h1>
               <p className={s.meta}>Area Authority · {topSt?.[0] || '—'} · Region 1</p>
+              {lastUpload && <p className={s.meta} style={{opacity:0.6, marginTop:2}}>Data terakhir diupdate: {lastUpload}</p>}
             </div>
           </div>
           <div className={s.heroStats}>
@@ -259,6 +275,45 @@ const submissionScore = useMemo(() => {
                 ? `${nama.split(' ')[0]} ${Math.round((1-total/avgTotal)*100)}% di bawah rata-rata tim`
                 : `${nama.split(' ')[0]} tepat di rata-rata tim`}
             </p>
+          </div>
+        </div>
+
+        {/* Target & Konsistensi */}
+        <div className={s.row2}>
+          <div className={s.card}>
+            <div className={s.cardTitle}>Target Bulan Ini ({targetBulanIni?.bulan})</div>
+            <div style={{display:'flex',alignItems:'center',gap:16,marginTop:8}}>
+              <div style={{fontSize:32,fontWeight:700,color: targetBulanIni?.pct>=100?'#059669':targetBulanIni?.pct>=70?'#D97706':'#CC0000'}}>
+                {targetBulanIni?.pct || 0}%
+              </div>
+              <div style={{flex:1}}>
+                <div style={{height:8,background:'#F3F4F6',borderRadius:4,overflow:'hidden',marginBottom:6}}>
+                  <div style={{height:'100%',width:`${targetBulanIni?.pct||0}%`,background: targetBulanIni?.pct>=100?'#059669':targetBulanIni?.pct>=70?'#D97706':'#CC0000',borderRadius:4}}/>
+                </div>
+                <div style={{fontSize:12,color:'#9CA3AF'}}>{targetBulanIni?.total || 0} dari target {targetBulanIni?.target || 20} laporan</div>
+              </div>
+            </div>
+          </div>
+
+          <div className={s.card}>
+            <div className={s.cardTitle}>Konsistensi</div>
+            <div style={{display:'flex',alignItems:'center',gap:16,marginTop:8}}>
+              <div style={{fontSize:32,fontWeight:700,color: konsistensiScore>=80?'#059669':konsistensiScore>=50?'#D97706':'#CC0000'}}>
+                {konsistensiScore}%
+              </div>
+              <div style={{flex:1}}>
+                <div style={{height:8,background:'#F3F4F6',borderRadius:4,overflow:'hidden',marginBottom:6}}>
+                  <div style={{height:'100%',width:`${konsistensiScore}%`,background: konsistensiScore>=80?'#059669':konsistensiScore>=50?'#D97706':'#CC0000',borderRadius:4}}/>
+                </div>
+                <div style={{fontSize:12,color:'#9CA3AF'}}>Aktif {bulanAA.length} dari {expectedBulan} bulan sejak mulai lapor</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className={s.card} style={{marginBottom:12}}>
+          <div className={s.scoreExplain} style={{marginTop:0,paddingTop:0,borderTop:'none'}}>
+            <strong>Target bulan ini:</strong> realisasi laporan dibanding target bulanan yang ditetapkan. <br/> <strong>Konsistensi:</strong> persentase bulan dengan laporan sejak pertama kali aktif — bukan dari awal data keseluruhan, supaya AA yang baru join tidak dirugikan.
           </div>
         </div>
 
@@ -391,6 +446,18 @@ const submissionScore = useMemo(() => {
         )
       })}
     </div>
+      <div className={s.scoreExplain}>
+  <strong>Rumus skor:</strong> Skor = (Skor Pemerataan × 60%) + (Skor Ketepatan Waktu × 40%)
+  <br/>
+  <strong>Skor Pemerataan</strong> = (jumlah hari unik lapor ÷ total laporan) × 100. Contoh: 13 laporan tapi cuma di 1 hari → (1÷13) × 100 = 8. Kalau 13 laporan tersebar di 13 hari berbeda → (13÷13) × 100 = 100.
+  <br/>
+  <strong>Skor Ketepatan Waktu</strong> = 100 − ((laporan di tanggal 25+ ÷ total laporan) × 100). Contoh: dari 10 laporan, 4 di antaranya di tanggal 25 ke atas → 100 − (4÷10×100) = 60.
+  <br/>
+  <br/>
+  <strong>Skor 80+</strong> = merata <br/>
+  <strong>50–79</strong> = cukup <br/>
+  <strong>50</strong> = numpuk di akhir bulan <br/>
+</div>
   </div>
 )}
 

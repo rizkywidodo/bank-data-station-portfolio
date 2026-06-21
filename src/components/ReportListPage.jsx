@@ -12,12 +12,29 @@ const BULAN_ORDER = ['Januari','Februari','Maret','April','Mei','Juni','Juli','A
 const DEFAULT_TARGET_STASIUN = 78
 const DEFAULT_TARGET_AA = 20
 
-export default function ReportListPage({ data, onSelect, onBack }) {
-  const [tab, setTab]                     = useState('stasiun')
+function submissionPatternScore(entries) {
+  if (!entries.length) return 100
+  const dates = entries.map(d => {
+    const raw = d.tglRaw || 0
+    if (!raw) return null
+    return new Date(raw).getDate()
+  }).filter(Boolean)
+  if (!dates.length) return 100
+  const spread = new Set(dates).size
+  const total = entries.length
+  const spreadScore = Math.min(spread / total * 100, 100)
+  const lateCount = dates.filter(d => d >= 25).length
+  const lateScore = Math.max(0, 100 - (lateCount / total * 100))
+  return Math.round((spreadScore * 0.6) + (lateScore * 0.4))
+}
+
+export default function ReportListPage({ data, onSelect, onBack, lastUpload, initialStasiun, onStasiunChange }) {
+  const [tab, setTab] = useState(initialStasiun ? 'aa' : 'stasiun')
   const [targets, setTargets]             = useState({})
   const [editing, setEditing]             = useState(null)
   const [editVal, setEditVal]             = useState('')
-  const [filterStasiun, setFilterStasiun] = useState(null)
+  const [filterStasiun, setFilterStasiunRaw] = useState(initialStasiun || null)
+  const setFilterStasiun = (val) => { setFilterStasiunRaw(val); onStasiunChange?.(val) }
   const [bulan, setBulan]                 = useState(() => {
     const available = BULAN_ORDER.filter(b => data.some(d => d.bulan === b))
     return available[available.length - 1] || 'all'
@@ -51,6 +68,7 @@ export default function ReportListPage({ data, onSelect, onBack }) {
   }
 
   const progressColor = (pct) => pct >= 100 ? '#059669' : pct >= 70 ? '#D97706' : '#CC0000'
+  const scoreColor = (sc) => sc >= 80 ? '#059669' : sc >= 50 ? '#D97706' : '#CC0000'
 
   const stasiunList = useMemo(() => {
     const stations = [...new Set(data.map(d => d.stasiun))].filter(Boolean).sort()
@@ -73,14 +91,47 @@ export default function ReportListPage({ data, onSelect, onBack }) {
       const allPd = data.filter(d => d.nama === nama)
       const byKat = countBy(pd, 'kategori')
       const topSt = Object.entries(countBy(allPd, 'stasiun')).sort((a,b) => b[1]-a[1])[0]
-      const bulanAktif = new Set(allPd.map(d => d.bulan)).size || 1
+
+      const bulanAA = BULAN_ORDER.filter(b => allPd.some(d => d.bulan === b))
+      const firstBulanIdx = BULAN_ORDER.indexOf(bulanAA[0])
+      const lastBulanIdx = BULAN_ORDER.indexOf(allBulan[allBulan.length - 1])
+      const expectedBulan = Math.max(lastBulanIdx - firstBulanIdx + 1, 1)
+      const konsistensi = Math.min(Math.round(bulanAA.length / expectedBulan * 100), 100)
+
       const total = pd.length
       const target = getTarget('aa', nama)
-      const pct = Math.min(Math.round(total / (target || 1) * 100), 100)
-      const avgPerBulan = Math.round(allPd.length / bulanAktif)
-      return { nama, total, byKat, topSt: topSt?.[0]||'—', target, pct, avgPerBulan, bulanAktif }
-    }).sort((a, b) => b.total - a.total),
-  [filteredData, data, allNames, targets, filterStasiun])
+      const targetPct = Math.min(Math.round(total / (target || 1) * 100), 100)
+      const avgPerBulan = Math.round(allPd.length / (bulanAA.length || 1))
+
+      const patternScores = bulanAA.map(b => submissionPatternScore(allPd.filter(d => d.bulan === b)))
+      const avgPattern = patternScores.length
+        ? Math.round(patternScores.reduce((a,b) => a+b, 0) / patternScores.length)
+        : 100
+
+      const patternThisMonth = bulan !== 'all' ? submissionPatternScore(pd) : avgPattern
+
+      let compositeScore, scoreLabel
+      if (bulan !== 'all') {
+        const isActiveThisMonth = total > 0
+        compositeScore = isActiveThisMonth
+          ? Math.round((targetPct * 0.6) + (patternThisMonth * 0.4))
+          : 0
+        scoreLabel = [
+          { label: 'Target bulan ini', weight: '60%', val: targetPct },
+          { label: 'Pola submission', weight: '40%', val: isActiveThisMonth ? patternThisMonth : 0 },
+        ]
+      } else {
+        compositeScore = Math.round((targetPct * 0.4) + (konsistensi * 0.3) + (avgPattern * 0.3))
+        scoreLabel = [
+          { label: 'Target rata-rata', weight: '40%', val: targetPct },
+          { label: 'Konsistensi', weight: '30%', val: konsistensi },
+          { label: 'Pola submission', weight: '30%', val: avgPattern },
+        ]
+      }
+
+      return { nama, total, byKat, topSt: topSt?.[0]||'—', target, targetPct, avgPerBulan, bulanAktif: bulanAA.length, konsistensi, avgPattern, compositeScore, scoreLabel }
+    }).sort((a, b) => b.compositeScore - a.compositeScore),
+  [filteredData, data, allNames, targets, filterStasiun, allBulan, bulan])
 
   return (
     <div className={s.page}>
@@ -106,6 +157,7 @@ export default function ReportListPage({ data, onSelect, onBack }) {
           <p className={s.eyebrow}>Analisa Per Individu</p>
           <h1 className={s.title}>Laporan AA.</h1>
           <p className={s.sub}>{allNames.length} Area Authority · {filteredData.length} laporan {bulan !== 'all' ? bulan : 'semua bulan'}</p>
+          {lastUpload && <p className={s.sub} style={{opacity:0.6, fontSize:13, marginTop:4}}>Data terakhir diupdate: {lastUpload}</p>}
         </div>
       </div>
 
@@ -124,7 +176,7 @@ export default function ReportListPage({ data, onSelect, onBack }) {
         {tab === 'stasiun' && (
           <div className={s.stasiunGrid}>
             {stasiunList.map((s2, i) => (
-              <div key={s2.st} className={s.stasiunCard}>
+              <div key={s2.st} className={s.stasiunCard} onClick={() => { setFilterStasiun(s2.st); setTab('aa') }}>
                 <div className={s.stasiunHeader}>
                   <div>
                     <div className={s.stasiunRank}>#{i+1}</div>
@@ -136,7 +188,7 @@ export default function ReportListPage({ data, onSelect, onBack }) {
                     {bulan !== 'all' && (
                       <div className={s.targetLabel}>
                         {editing === `st__${s2.st}` ? (
-                          <span className={s.editWrap}>
+                          <span className={s.editWrap} onClick={e=>e.stopPropagation()}>
                             <input className={s.editInput} value={editVal} onChange={e=>setEditVal(e.target.value)}
                               onKeyDown={e=>e.key==='Enter'&&saveTarget('stasiun',s2.st,editVal)}
                               autoFocus style={{width:50}} />
@@ -144,7 +196,7 @@ export default function ReportListPage({ data, onSelect, onBack }) {
                             <button className={s.editCancel} onClick={()=>setEditing(null)}>✕</button>
                           </span>
                         ) : (
-                          <span onClick={()=>{setEditing(`st__${s2.st}`);setEditVal(String(s2.target))}} className={s.targetClick}>
+                          <span onClick={(e)=>{e.stopPropagation();setEditing(`st__${s2.st}`);setEditVal(String(s2.target))}} className={s.targetClick}>
                             target: {s2.target} ✎
                           </span>
                         )}
@@ -177,9 +229,7 @@ export default function ReportListPage({ data, onSelect, onBack }) {
                 </div>
 
                 <div className={s.stasiunFooter}>
-                  <button className={s.viewBtn} onClick={() => { setFilterStasiun(s2.st); setTab('aa') }}>
-                    Lihat AA →
-                  </button>
+                  <button className={s.viewBtn}>Lihat AA →</button>
                 </div>
               </div>
             ))}
@@ -204,34 +254,38 @@ export default function ReportListPage({ data, onSelect, onBack }) {
                       <div className={s.name}>{aa.nama}</div>
                       <div className={s.meta}>{aa.topSt}</div>
                     </div>
-                    <div>
-                      <div className={s.total} style={{color: bulan !== 'all' ? progressColor(aa.pct) : 'var(--text)'}}>{aa.total}</div>
-                      {bulan !== 'all' && (
-                        <div className={s.targetLabel}>
-                          {editing === `aa__${aa.nama}` ? (
-                            <span className={s.editWrap}>
-                              <input className={s.editInput} value={editVal} onChange={e=>setEditVal(e.target.value)}
-                                onKeyDown={e=>e.key==='Enter'&&saveTarget('aa',aa.nama,editVal)}
-                                autoFocus style={{width:40}} />
-                              <button className={s.editSave} onClick={()=>saveTarget('aa',aa.nama,editVal)}>✓</button>
-                              <button className={s.editCancel} onClick={()=>setEditing(null)}>✕</button>
-                            </span>
-                          ) : (
-                            <span onClick={e=>{e.stopPropagation();setEditing(`aa__${aa.nama}`);setEditVal(String(aa.target))}} className={s.targetClick}>
-                              target: {aa.target} ✎
-                            </span>
-                          )}
-                        </div>
-                      )}
+                    <div style={{textAlign:'right'}}>
+                      <div className={s.total}>{aa.total}</div>
+                      <div className={s.scoreTag} style={{color: scoreColor(aa.compositeScore)}}>
+                        skor {aa.compositeScore}
+                      </div>
                     </div>
                   </div>
 
-                  {bulan !== 'all' && (
-                    <div className={s.progressWrap}>
-                      <div className={s.progressTrack}>
-                        <div className={s.progressFill} style={{width:`${aa.pct}%`, background: progressColor(aa.pct)}}/>
+                  <div className={s.scoreBreakdown}>
+                    {aa.scoreLabel.map(sl => (
+                      <div key={sl.label} className={s.sbRow}>
+                        <span className={s.sbLabel}>{sl.label} <span className={s.sbWeight}>({sl.weight})</span></span>
+                        <span className={s.sbVal}>{sl.val}%</span>
                       </div>
-                      <span className={s.progressPct} style={{color: progressColor(aa.pct)}}>{aa.pct}%</span>
+                    ))}
+                  </div>
+
+                  {bulan !== 'all' && (
+                    <div className={s.targetEditRow} onClick={e => e.stopPropagation()}>
+                      {editing === `aa__${aa.nama}` ? (
+                        <span className={s.editWrap}>
+                          <input className={s.editInput} value={editVal} onChange={e=>setEditVal(e.target.value)}
+                            onKeyDown={e=>e.key==='Enter'&&saveTarget('aa',aa.nama,editVal)}
+                            autoFocus style={{width:40}} />
+                          <button className={s.editSave} onClick={()=>saveTarget('aa',aa.nama,editVal)}>✓</button>
+                          <button className={s.editCancel} onClick={()=>setEditing(null)}>✕</button>
+                        </span>
+                      ) : (
+                        <span onClick={()=>{setEditing(`aa__${aa.nama}`);setEditVal(String(aa.target))}} className={s.targetClick}>
+                          target: {aa.target} laporan/bulan ✎
+                        </span>
+                      )}
                     </div>
                   )}
 
