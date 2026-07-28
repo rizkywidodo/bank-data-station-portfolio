@@ -41,28 +41,23 @@ export function DonutChart({ data }) {
 
 export function BarStasiun({ data }) {
   const bySt = countBy(data, 'stasiun')
-  const cd = STASIUN_LIST.map(s => ({ name: s, value: bySt[s] || 0, full: s }))
+  const stations = [...new Set(data.map(d => d.stasiun))].filter(Boolean).sort()
+  const cd = stations.map(s => ({ name: s, value: bySt[s] || 0 }))
+  const maxVal = Math.max(...cd.map(d => d.value), 1)
+
   return (
     <Card title="Laporan per Stasiun">
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={cd} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
-          <XAxis dataKey="name" tick={(props) => {
-            const { x, y, payload } = props
-            const words = payload.value.split(' ')
-            return (
-              <g transform={`translate(${x},${y})`}>
-                {words.map((word, i) => (
-                  <text key={i} x={0} y={0} dy={14 + i * 14} textAnchor="middle" fill="#6B7280" fontSize={12}>{word}</text>
-                ))}
-              </g>
-            )
-          }} axisLine={false} tickLine={false} height={45} />
-          <YAxis tick={{ fontSize: 12, fill: '#6B7280' }} axisLine={false} tickLine={false} allowDecimals={false} />
-          <Tooltip formatter={(v, _, p) => [v, p.payload.full]} cursor={{ fill: '#F9FAFB' }} />
-         <Bar dataKey="value" fill="#0057A8" radius={[5,5,0,0]} name="Laporan" />
-        </BarChart>
-      </ResponsiveContainer>
+      <div style={{marginTop:8}}>
+        {cd.sort((a,b) => b.value - a.value).map(item => (
+          <div key={item.name} className={s.pRow}>
+            <span className={s.pLabel}>{item.name}</span>
+            <div className={s.pTrack}>
+              <div className={s.pFill} style={{width:`${Math.round(item.value/maxVal*100)}%`, background:'#0057A8'}}/>
+            </div>
+            <span className={s.pVal}>{item.value}</span>
+          </div>
+        ))}
+      </div>
     </Card>
   )
 }
