@@ -4,8 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import s from './ReportListPage.module.css'
 
 const supabase = createClient(
-  'https://jcxjufbzblfqobpjobzw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGp1ZmJ6YmxmcW9icGpvYnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MDE5MTQsImV4cCI6MjA5MjI3NzkxNH0.iC5msp9WUC96XX6hegEjxzUZmNQKYyv7KMXcuSYi_WY'
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 )
 
 const BULAN_ORDER = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']

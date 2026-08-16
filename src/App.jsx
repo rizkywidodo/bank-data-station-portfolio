@@ -7,11 +7,10 @@ import ReportListPage from './components/ReportListPage'
 import ReportPage from './components/ReportPage'
 
 const supabase = createClient(
-  'https://jcxjufbzblfqobpjobzw.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpjeGp1ZmJ6YmxmcW9icGpvYnp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY3MDE5MTQsImV4cCI6MjA5MjI3NzkxNH0.iC5msp9WUC96XX6hegEjxzUZmNQKYyv7KMXcuSYi_WY'
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_ANON_KEY
 )
-
-const PASSWORD = '@Bandung2026'
+const PASSWORD = import.meta.env.VITE_APP_PASSWORD
 
 const parseRows = (rows) => rows
   .filter(r => r.Name && r.Stasiun)
