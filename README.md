@@ -3,7 +3,14 @@
 
 A real-time web dashboard built to digitalize and visualize daily station reports from Area Authority (AA) staff across MRT Jakarta's Region 1 stations — replacing manual Excel-based analysis.
 
-> ⚠️ **Note:** This is a sanitized portfolio version. Production deployment uses real operational data from PT MRT Jakarta (password protected).
+> **📌 Portfolio Version**
+> This is a sanitized, read-only portfolio demo of the internal dashboard built during my internship at PT MRT Jakarta.
+> - **Data:** Sample operational data from February–June 2026 (anonymized, real structure)
+> - **No upload functionality** — data is static and loaded from a bundled CSV
+> - **No authentication** — open access for portfolio viewing
+> - **Production version** is password-protected and used daily by Station Managers at MRT Jakarta Region 1
+>
+> Live production app: [bank-data-station.vercel.app](https://bank-data-station.vercel.app) *(password protected)*
 
 ---
 
