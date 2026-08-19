@@ -1,12 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { countBy, initials } from '../hooks/useFilters'
-import { createClient } from '@supabase/supabase-js'
 import s from './ReportListPage.module.css'
 
-const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY
-)
 
 const BULAN_ORDER = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
 const DEFAULT_TARGET_STASIUN = 78
@@ -47,15 +42,6 @@ export default function ReportListPage({ data, onSelect, onBack, lastUpload, ini
     bulan === 'all' ? data : data.filter(d => d.bulan === bulan), [data, bulan])
 
   const allNames = useMemo(() => [...new Set(data.map(d => d.nama))].sort(), [data])
-
-  useEffect(() => {
-    supabase.from('targets').select('*').then(({ data: rows }) => {
-      if (!rows) return
-      const map = {}
-      rows.forEach(r => { map[`${r.type}__${r.name}`] = r.target_per_bulan })
-      setTargets(map)
-    })
-  }, [])
 
   const getTarget = (type, name) => targets[`${type}__${name}`] || (type === 'stasiun' ? DEFAULT_TARGET_STASIUN : DEFAULT_TARGET_AA)
 
